@@ -31,12 +31,17 @@ func main() {
   entry_message := message.NewMessage(*messagePtr)
 
   // Read configuration file
-  fileContents, _ := ioutil.ReadFile(*configPtr)
+  fileContents, file_error := ioutil.ReadFile(*configPtr)
+  if file_error != nil {
+    fmt.Println(file_error)
+    os.Exit(1)
+  }
 
   // Store config values
   var conf Config
   err := json.Unmarshal(fileContents, &conf)
   if err != nil {
+    fmt.Println(err)
   }
 
   // HTTP Request to server
