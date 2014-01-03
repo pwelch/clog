@@ -1,16 +1,25 @@
 package main
 
 import (
+  "encoding/json"
   "fmt"
   "flag"
+  "io/ioutil"
   "os"
   "github.com/pwelch/clog/message"
   "github.com/pwelch/clog/transmit"
 )
 
+// Config File values
+type Config struct {
+  Server string `json:server`
+  Api_key string `json:api_key`
+}
+
 func main() {
   // Parse command line flags
   messagePtr := flag.String("m", "", "Message to log")
+  configPtr := flag.String("c", "/etc/clog/clog_config.json", "Path to configuration file")
   flag.Parse()
 
   if *messagePtr == "" {
@@ -21,12 +30,27 @@ func main() {
   // Genereate new entry message
   entry_message := message.NewMessage(*messagePtr)
 
-  api_url   := "http://localhost:3000/api"
-  api_token := "d298a89be686d366a72a78d92e3e43e8"
+  // Read configuration file
+  fileContents, _ := ioutil.ReadFile(*configPtr)
+
+  // Store config values
+  var conf Config
+  err := json.Unmarshal(fileContents, &conf)
+  if err != nil {
+  }
 
   // HTTP Request to server
-  response, _ := transmit.NewRequest(api_url, api_token, entry_message)
- fmt.Println(response)
- // print JSON for debuging
- // fmt.Println("JSON:", string(event_entry))
+  response, err := transmit.NewRequest(conf.Server, conf.Api_key, entry_message)
+  if err != nil {
+    fmt.Println(err)
+    os.Exit(1)
+  }
+
+  // Return Success or Failure
+  if response.StatusCode == 201 {
+    fmt.Println("OK")
+  } else {
+    fmt.Println("Failed")
+    os.Exit(1)
+  }
 }
